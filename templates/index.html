@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to GhostInbox{% endblock %}
+
+{% block extra_css %}
+<style>
+    .welcome-section {
+        background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
+        color: white;
+        padding: 4rem 0;
+        margin: -1rem 0 2rem 0;
+        border-radius: 0 0 1rem 1rem;
+    }
+    .welcome-logo {
+        max-width: 600px;
+        height: auto;
+        margin-bottom: 2rem;
+        filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.3));
+    }
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: var(--bs-primary);
+    }
+    .card {
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .search-box {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .hash-preview {
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: var(--bs-secondary);
+        word-break: break-all;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-section">
+    <div class="text-center">
+        <img src="{{ url_for('static', filename='logo.png') }}" 
+             alt="GhostInbox Logo" 
+             class="welcome-logo">
+        <p class="lead">Your favorite temporary email service</p>
+    </div>
+</div>
+
+<div class="search-box mb-4">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="h5 mb-3">Search by Alias</h3>
+            <form id="searchForm" action="{{ url_for('search_alias') }}" method="GET" class="d-flex">
+                <input type="text" 
+                       id="aliasInput"
+                       name="hash" 
+                       class="form-control me-2" 
+                       placeholder="Enter your alias with 8 or more characters!"
+                       minlength="8"
+                       required>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </form>
+            <div id="hashPreview" class="hash-preview"></div> <br />
+            <p class="text-muted">
+                <small>
+                    <i class="bi bi-info-circle"></i>
+                    Your alias is your secret key to access your emails! <br />
+                    If you forget it, you can't access your emails! <br />
+                    If you choose a simple alias other people can guess it!
+                </small>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 text-center">
+        <div class="card h-100">
+            <div class="card-body">
+                <i class="bi bi-shield-lock feature-icon"></i>
+                <h3>No KYC</h3>
+                <p>No registration required! No tracking! No ads! Nothing!</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center">
+        <div class="card h-100">
+            <div class="card-body">
+                <i class="bi bi-envelope feature-icon"></i>
+                <h3>Temporary</h3>
+                <p>Your emails are deleted after some time!</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center">
+        <div class="card h-100">
+            <div class="card-body">
+                <i class="bi bi-lightning feature-icon"></i>
+                <h3>Fast</h3>
+                <p>Select your alias and get your emails! No need to wait!</p>
+                <p>If you are interested your mail will be calculated automatically with the sha256 of your alias!</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Function to compute SHA-256 hash
+    async function sha256(message) {
+        // Encode the message as UTF-8
+        const msgBuffer = new TextEncoder().encode(message);
+        // Hash the message
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        // Convert to hex string
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
+    }
+
+    const aliasInput = document.getElementById('aliasInput');
+    const hashPreview = document.getElementById('hashPreview');
+    const searchForm = document.getElementById('searchForm');
+
+    // Update hash preview as user types
+    aliasInput.addEventListener('input', async function() {
+        const alias = this.value.trim().toLowerCase();
+        if (alias) {
+            const hash = await sha256(alias);
+            hashPreview.textContent = `Hash: ${hash}`;
+        } else {
+            hashPreview.textContent = '';
+        }
+    });
+
+    // Handle form submission
+    searchForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const alias = aliasInput.value.trim().toLowerCase();
+        if (alias) {
+            const hash = await sha256(alias);
+            // Update the input value with the hash
+            aliasInput.value = hash;
+            this.submit();
+        }
+    });
+</script>
+{% endblock %}
