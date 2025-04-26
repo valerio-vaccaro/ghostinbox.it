@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'fallback-secret-key-for-development')
 
 # Retrieve email and password from environment variables
-EMAIL_ADDRESS = os.getenv('LIBERO_EMAIL')
-PASSWORD = os.getenv('LIBERO_PASSWORD')
+EMAIL_ADDRESS = os.getenv('BASE_EMAIL')
+PASSWORD = os.getenv('BASE_PASSWORD')
 
 # Example usage (e.g., connecting to an IMAP server)
 # Replace this with your actual code
