@@ -14,6 +14,7 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'fallback-secret-key-for-dev
 # Retrieve email and password from environment variables
 EMAIL_ADDRESS = os.getenv('BASE_EMAIL')
 PASSWORD = os.getenv('BASE_PASSWORD')
+IMAP_SERVER = os.getenv('IMAP_SERVER')
 
 # Example usage (e.g., connecting to an IMAP server)
 # Replace this with your actual code
