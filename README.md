@@ -44,6 +44,7 @@ A Flask-based email viewing application that allows users to view emails sent to
    BASE_EMAIL=your_email
    BASE_PASSWORD=your_password
    IMAP_SERVER=imapmail.myserver.it
+   DOMAIN=your_domain
    ```
 
 5. **Run the application**

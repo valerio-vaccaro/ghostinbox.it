@@ -15,6 +15,8 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'fallback-secret-key-for-dev
 EMAIL_ADDRESS = os.getenv('BASE_EMAIL')
 PASSWORD = os.getenv('BASE_PASSWORD')
 IMAP_SERVER = os.getenv('IMAP_SERVER')
+DOMAIN = os.getenv('DOMAIN')
+ONION_DOMAIN = os.getenv('ONION_DOMAIN')
 
 # Example usage (e.g., connecting to an IMAP server)
 # Replace this with your actual code
@@ -142,7 +144,7 @@ def get_email_by_id(email_id):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', domain=DOMAIN, onion_domain=ONION_DOMAIN)
 
 @app.route('/email/<email_id>')
 def view_email(email_id):
@@ -163,7 +165,7 @@ def view_email(email_id):
     # Store the hash in session for subsequent requests
     session['hash'] = hash
 
-    return render_template('email_view.html', email=email_data, hash=hash)
+    return render_template('email_view.html', email=email_data, hash=hash, domain=DOMAIN, onion_domain=ONION_DOMAIN)
 
 @app.route('/search')
 def search_alias():
@@ -179,7 +181,9 @@ def search_alias():
         return render_template('search_results.html', 
                              emails=filtered_emails, 
                              alias=f'{hash}@ghostinbox.it',
-                             hash=hash)
+                             hash=hash,
+                             domain=DOMAIN,
+                             onion_domain=ONION_DOMAIN)
     except Exception as e:
         flash(f'Error searching emails: {str(e)}', 'error')
         return redirect(url_for('index'))
