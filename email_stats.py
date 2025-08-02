@@ -64,11 +64,13 @@ def get_email_stats():
 
             # Calculate age in days
             date_str = msg.get('date')
+            age_days = 'N/A'
             if date_str:
-                email_date = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
-                age_days = (datetime.now(email_date.tzinfo) - email_date).days
-            else:
-                age_days = 'N/A'
+                try:
+                    email_date = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
+                    age_days = (datetime.now(email_date.tzinfo) - email_date).days
+                except ValueError:
+                    print(f"Error parsing date: {date_str}")
 
             # Calculate size
             size = len(msg_data[0][1])
