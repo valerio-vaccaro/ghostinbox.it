@@ -79,7 +79,7 @@ def get_email_stats():
             status = 'Kept'
             status_color = GREEN
             if isinstance(age_days, int):
-                if age_days > 30 and size > 1000000:
+                if age_days > 30:
                     mail.store(email_id, '+FLAGS', '\\Deleted')
                     status = 'Deleted'
                     status_color = RED
