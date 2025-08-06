@@ -3,6 +3,7 @@ import imaplib
 import email
 from email.header import decode_header
 import os
+import re
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -25,6 +26,32 @@ print(f"Password: {PASSWORD}")
 
 # Libero.it IMAP settings
 IMAP_SERVER = 'imapmail.libero.it'
+
+def extract_email_from_to_field(to_field):
+    """
+    Extract email address from the 'to' field which can be either:
+    - Plain email: "user@example.com"
+    - Formatted: '"Name Surname" <user@example.com>'
+
+    Args:
+        to_field (str): The 'to' field content
+
+    Returns:
+        str: The extracted email address or None if not found
+    """
+    if not to_field:
+        return None
+
+    # Pattern to match email addresses
+    # This regex handles both plain emails and emails within angle brackets
+    email_pattern = r'<([^>]+)>|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
+
+    match = re.search(email_pattern, to_field)
+    if match:
+        # Return the first non-None group (either from angle brackets or plain email)
+        return match.group(1) if match.group(1) else match.group(2)
+
+    return None
 
 def get_emails():
     try:
@@ -158,8 +185,12 @@ def view_email(email_id):
         flash('Email not found', 'error')
         return redirect(url_for('index'))
         
-    if email_data['to'] != f'{hash}@ghostinbox.it':
-        flash('Email not found', 'error')
+    # Extract the actual email address from the 'to' field
+    extracted_email = extract_email_from_to_field(email_data['to'])
+
+    # Check if the extracted email matches the hash
+    if extracted_email != f'{hash}@ghostinbox.it':
+        flash('Email not found, wrong hash', 'error')
         return redirect(url_for('index'))
     
     # Store the hash in session for subsequent requests
@@ -176,8 +207,13 @@ def search_alias():
     
     try:
         emails = get_emails()
-        # Filter emails where the hash appears in the 'to' field
-        filtered_emails = [email for email in emails if hash.lower() in email['to'].lower()]
+        # Filter emails where the extracted email matches the hash
+        filtered_emails = []
+        for email in emails:
+            extracted_email = extract_email_from_to_field(email['to'])
+            if extracted_email.lower() == f'{hash}@ghostinbox.it'.lower():
+                filtered_emails.append(email)
+
         return render_template('search_results.html', 
                              emails=filtered_emails, 
                              alias=f'{hash}@ghostinbox.it',
