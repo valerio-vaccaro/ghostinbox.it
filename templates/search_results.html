@@ -7,7 +7,12 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h4 mb-0">Search Results for email: {{ alias }}</h2>
+                <h2 class="h4 mb-0">Search Results for email:
+                    <span id="email-address">{{ alias }}</span>
+                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyEmailAddress()" title="Copy email address">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </h2>
                 <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
                     <i class="bi bi-arrow-left"></i> Back to Home
                 </a>
@@ -52,4 +57,127 @@
         </div>
     </div>
 </div>
+
+<script>
+// Copy email address functionality
+function copyEmailAddress() {
+    const emailAddress = document.getElementById('email-address').textContent;
+
+    // Use the modern clipboard API if available
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(emailAddress).then(function() {
+            showCopySuccess();
+        }).catch(function(err) {
+            console.error('Could not copy text: ', err);
+            fallbackCopyTextToClipboard(emailAddress);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyTextToClipboard(emailAddress);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopySuccess();
+        } else {
+            showCopyError();
+        }
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+        showCopyError();
+    }
+
+    document.body.removeChild(textArea);
+}
+
+function showCopySuccess() {
+    const button = document.querySelector('button[onclick="copyEmailAddress()"]');
+    const originalText = button.innerHTML;
+
+    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    button.classList.remove('btn-outline-secondary');
+    button.classList.add('btn-success');
+
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function showCopyError() {
+    const button = document.querySelector('button[onclick="copyEmailAddress()"]');
+    const originalText = button.innerHTML;
+
+    button.innerHTML = '<i class="fas fa-times"></i> Failed';
+    button.classList.remove('btn-outline-secondary');
+    button.classList.add('btn-danger');
+
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-danger');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+// Auto-refresh the page every 10 seconds
+let refreshInterval;
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(function() {
+        console.log('Auto-refreshing page...');
+        window.location.reload();
+    }, 10000); // 10 seconds = 10000 milliseconds
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        console.log('Auto-refresh stopped');
+    }
+}
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startAutoRefresh();
+    console.log('Auto-refresh started - page will refresh every 10 seconds');
+});
+
+// Stop auto-refresh when user leaves the page
+window.addEventListener('beforeunload', function() {
+    stopAutoRefresh();
+});
+
+// Optional: Stop auto-refresh when user is not active (optional feature)
+let userActivityTimeout;
+function resetUserActivity() {
+    clearTimeout(userActivityTimeout);
+    userActivityTimeout = setTimeout(function() {
+        console.log('User inactive - stopping auto-refresh');
+        stopAutoRefresh();
+    }, 300000); // Stop after 5 minutes of inactivity
+}
+
+// Reset activity timer on user interaction
+document.addEventListener('mousemove', resetUserActivity);
+document.addEventListener('keypress', resetUserActivity);
+document.addEventListener('click', resetUserActivity);
+
+// Initialize activity tracking
+resetUserActivity();
+</script>
 {% endblock %} 
