@@ -365,94 +365,9 @@ def generate_static_stats_page():
                     </div>
                 </div>
 
-                <!-- Recent Emails Table -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5><i class="bi bi-table"></i> Recent Emails</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>From</th>
-                                        <th>To</th>
-                                        <th>Age (days)</th>
-                                        <th>Size</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>'''
-    
-    # Add recent emails to the table
-    for email in stats['recent_emails_list']:
-        age_badge = ''
-        if email['age_days'] == 'N/A':
-            age_badge = '<span class="badge bg-secondary">N/A</span>'
-        elif email['age_days'] <= 7:
-            age_badge = f'<span class="badge bg-success">{email["age_days"]}</span>'
-        elif email['age_days'] <= 30:
-            age_badge = f'<span class="badge bg-warning">{email["age_days"]}</span>'
-        else:
-            age_badge = f'<span class="badge bg-danger">{email["age_days"]}</span>'
-        
-        status_badge = ''
-        if email['status'] == 'Kept':
-            status_badge = '<span class="badge bg-success">Kept</span>'
-        elif email['status'] == 'Deleted':
-            status_badge = '<span class="badge bg-danger">Deleted</span>'
-        else:
-            status_badge = f'<span class="badge bg-warning">{email["status"]}</span>'
-        
-        html_content += f'''
-                                    <tr>
-                                        <td><small class="text-muted">{email['from_'][:30]}{"..." if len(email['from_']) > 30 else ""}</small></td>
-                                        <td><small class="text-muted">{email['to_'][:30]}{"..." if len(email['to_']) > 30 else ""}</small></td>
-                                        <td>{age_badge}</td>
-                                        <td><small>{email['size_kb']} KB</small></td>
-                                        <td>{status_badge}</td>
-                                    </tr>'''
-    
-    html_content += '''
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top Senders and Receivers -->
+                <!-- Top Receivers -->
                 <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5><i class="bi bi-person-fill"></i> Top Senders</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Email</th>
-                                                <th>Count</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>'''
-    
-    for sender in stats['top_senders']:
-        html_content += f'''
-                                            <tr>
-                                                <td><small class="text-muted">{sender['email'][:40]}{"..." if len(sender['email']) > 40 else ""}</small></td>
-                                                <td><span class="badge bg-primary">{sender['count']}</span></td>
-                                            </tr>'''
-    
-    html_content += '''
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
                                 <h5><i class="bi bi-people-fill"></i> Top Receivers</h5>
