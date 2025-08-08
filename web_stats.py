@@ -69,6 +69,9 @@ def get_web_stats():
             from_ = msg.get('from', 'Unknown')
             to_ = msg.get('to', 'Unknown')
             
+            # Extract plain email addresses for display/counters
+            from_email = extract_email_from_to_field(from_) or from_
+            
             # Extract email from 'to' field and check if it's ghostinbox.it
             extracted_email = extract_email_from_to_field(to_)
             if not extracted_email or not extracted_email.lower().endswith('@ghostinbox.it'):
@@ -81,9 +84,9 @@ def get_web_stats():
             total_emails += 1
             
             # Update counters
-            unique_senders.add(from_)
+            unique_senders.add(from_email)
             unique_receivers.add(extracted_email)
-            sender_counter[from_] += 1
+            sender_counter[from_email] += 1
             receiver_counter[extracted_email] += 1
             
             # Get subject
@@ -125,7 +128,7 @@ def get_web_stats():
             # Add to recent emails list (last 10)
             if len(recent_emails_list) < 10:
                 recent_emails_list.append({
-                    'from_': from_,
+                    'from_': from_email,
                     'to_': extracted_email,  # Use extracted email instead of raw 'to' field
                     'subject': subject,
                     'age_days': age_days,
@@ -374,7 +377,6 @@ def generate_static_stats_page():
                                     <tr>
                                         <th>From</th>
                                         <th>To</th>
-                                        <th>Subject</th>
                                         <th>Age (days)</th>
                                         <th>Size</th>
                                         <th>Status</th>
@@ -406,7 +408,6 @@ def generate_static_stats_page():
                                     <tr>
                                         <td><small class="text-muted">{email['from_'][:30]}{"..." if len(email['from_']) > 30 else ""}</small></td>
                                         <td><small class="text-muted">{email['to_'][:30]}{"..." if len(email['to_']) > 30 else ""}</small></td>
-                                        <td><small>{email['subject'][:40]}{"..." if len(email['subject']) > 40 else ""}</small></td>
                                         <td>{age_badge}</td>
                                         <td><small>{email['size_kb']} KB</small></td>
                                         <td>{status_badge}</td>
