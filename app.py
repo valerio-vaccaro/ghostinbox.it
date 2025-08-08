@@ -224,5 +224,13 @@ def search_alias():
         flash(f'Error searching emails: {str(e)}', 'error')
         return redirect(url_for('index'))
 
+@app.route('/stats')
+def stats():
+    return redirect('/static/stats.html')
+
+@app.route('/about')
+def about():
+    return render_template('about.html', domain=DOMAIN, onion_domain=ONION_DOMAIN)
+
 if __name__ == '__main__':
     app.run(debug=True)
