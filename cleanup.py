@@ -24,11 +24,107 @@ def extract_email_from_to_field(to_field):
         return match.group(1) if match.group(1) else match.group(2)
     return None
 
+def check_and_move_spam_emails(mail):
+    """Check spam folder and move emails back to inbox"""
+    # ANSI color codes
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    
+    try:
+        # List all folders to find spam folder
+        status, folders = mail.list()
+        spam_folder = None
+        
+        # Common spam folder names
+        spam_names = ['spam', 'junk', 'bulk', 'spam_folder', 'junk_mail']
+        
+        for folder in folders:
+            folder_name = folder.decode().split(' ')[-1]
+            if any(spam_name in folder_name.lower() for spam_name in spam_names):
+                spam_folder = folder_name
+                break
+        
+        if not spam_folder:
+            print(f"{YELLOW}No spam folder found. Skipping spam check.{RESET}")
+            return
+        
+        print(f"\n{BOLD}Checking spam folder: {spam_folder}{RESET}")
+        print(f"{BLUE}{'-' * 80}{RESET}")
+        
+        # Select spam folder
+        mail.select(spam_folder)
+        
+        # Search for all emails in spam
+        status, data = mail.search(None, 'ALL')
+        spam_email_ids = data[0].split()
+        
+        if not spam_email_ids:
+            print(f"{GREEN}No emails found in spam folder.{RESET}")
+            return
+        
+        print(f"{BOLD}Found {len(spam_email_ids)} emails in spam folder:{RESET}")
+        print(f"{BOLD}{'From':<30} {'To':<30} {'Subject':<40}{RESET}")
+        print(f"{BLUE}{'-' * 100}{RESET}")
+        
+        moved_count = 0
+        
+        for email_id in spam_email_ids:
+            # Fetch email
+            status, msg_data = mail.fetch(email_id, '(RFC822)')
+            msg = email.message_from_bytes(msg_data[0][1])
+            
+            # Get email details
+            from_ = msg.get('from', 'Unknown')
+            to_ = msg.get('to', 'Unknown')
+            
+            # Extract email from 'to' field
+            extracted_email = extract_email_from_to_field(to_)
+            
+            # Get subject
+            subject, encoding = decode_header(msg['subject'])[0] if msg['subject'] else ('No Subject', None)
+            if isinstance(subject, bytes):
+                subject = subject.decode(encoding or 'utf-8', errors='ignore')
+            
+            # Print email info
+            print(f"{from_[:30]:<30} {extracted_email[:30] if extracted_email else 'Unknown':<30} {subject[:40]:<40}")
+            
+            # Move email back to inbox
+            try:
+                # Copy email to inbox
+                mail.copy(email_id, 'INBOX')
+                # Mark for deletion from spam
+                mail.store(email_id, '+FLAGS', '\\Deleted')
+                moved_count += 1
+                print(f"{GREEN}  ✓ Moved to inbox{RESET}")
+            except Exception as e:
+                print(f"{RED}  ✗ Failed to move: {e}{RESET}")
+        
+        # Permanently remove emails from spam folder
+        mail.expunge()
+        
+        print(f"\n{BOLD}Spam Processing Summary:{RESET}")
+        print(f"{BLUE}{'-' * 30}{RESET}")
+        print(f"{BOLD}Emails moved to inbox:{RESET} {moved_count}")
+        print(f"{BOLD}Total emails in spam:{RESET} {len(spam_email_ids)}")
+        print(f"{BLUE}{'-' * 30}{RESET}")
+        
+    except Exception as e:
+        print(f"{RED}Error processing spam folder: {e}{RESET}")
+
 def get_email_stats():
     try:
         # Connect to IMAP server
         mail = imaplib.IMAP4_SSL(IMAP_SERVER, 993)
         mail.login(EMAIL_ADDRESS, PASSWORD)
+        
+        # First, check and move emails from spam folder
+        check_and_move_spam_emails(mail)
+        
+        # Now process inbox
         mail.select('inbox')
 
         # Search for all emails
