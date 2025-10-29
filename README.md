@@ -74,6 +74,103 @@ The application includes an email management script (`email_stats.py`) that prov
 - 🗑️ Automatic cleanup of old/large emails
 - 📊 Summary of unique senders and receivers
 
+## 🔌 API Documentation
+
+GhostInbox.it provides a REST API to programmatically access emails.
+
+### Base URL
+All API endpoints are available at: `http://your-domain/api/`
+
+### Authentication
+All API endpoints use hash-based authentication. The hash parameter must match the SHA256 hash used to generate your email alias (64 characters).
+
+### Endpoints
+
+#### 1. List Emails
+Get a list of emails, optionally filtered by alias hash.
+
+**Endpoint:** `GET /api/emails`
+
+**Query Parameters:**
+- `hash` (optional): Filter emails by alias hash (64 characters)
+- `limit` (optional): Maximum number of emails to return (default: 10)
+
+**Examples:**
+```bash
+# Get all emails (limited to 10)
+curl "http://localhost:5000/api/emails"
+
+# Get emails for a specific alias
+curl "http://localhost:5000/api/emails?hash=abc123...xyz789"
+
+# Get up to 20 emails
+curl "http://localhost:5000/api/emails?limit=20"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 5,
+  "emails": [
+    {
+      "id": "123",
+      "from": "sender@example.com",
+      "to": "hash@ghostinbox.it",
+      "subject": "Test Email",
+      "date": "Tue, 28 Oct 2025 10:00:00 +0000"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid hash format
+- `500 Internal Server Error`: Server error
+
+#### 2. Get Email Details
+Get the full details of a specific email, including body content.
+
+**Endpoint:** `GET /api/emails/<email_id>`
+
+**Query Parameters:**
+- `hash` (required): Alias hash to verify email ownership (64 characters)
+
+**Example:**
+```bash
+curl "http://localhost:5000/api/emails/123?hash=abc123...xyz789"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "email": {
+    "id": "123",
+    "from": "sender@example.com",
+    "to": "hash@ghostinbox.it",
+    "subject": "Test Email",
+    "date": "Tue, 28 Oct 2025 10:00:00 +0000",
+    "body": "Email content...",
+    "content_type": "text/plain"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Missing or invalid hash parameter
+- `403 Forbidden`: Hash mismatch - email doesn't belong to this alias
+- `404 Not Found`: Email not found
+- `500 Internal Server Error`: Server error
+
+### API Usage Tips
+
+- 🔒 Always use HTTPS in production
+- 🔑 Keep your hash secret - it's your authentication token
+- 📝 The email list endpoint doesn't include body content for performance
+- ⚡ Use the `limit` parameter to paginate results
+- 🛡️ The hash verification ensures only the alias owner can view their emails
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

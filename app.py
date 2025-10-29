@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, session, jsonify
 import imaplib
 import email
 from email.header import decode_header
@@ -231,6 +231,110 @@ def stats():
 @app.route('/about')
 def about():
     return render_template('about.html', domain=DOMAIN, onion_domain=ONION_DOMAIN)
+
+# API Routes
+@app.route('/api/emails')
+def api_list_emails():
+    """
+    API endpoint to get list of emails.
+    Query parameters:
+    - hash: optional hash to filter emails by alias (64 characters)
+    - limit: optional limit of emails to return (default: 10)
+    """
+    hash_param = request.args.get('hash', '').strip()
+    limit = int(request.args.get('limit', 10))
+    
+    try:
+        emails = get_emails()
+        
+        # If hash is provided, filter emails by that hash
+        if hash_param:
+            if len(hash_param) != 64:
+                return jsonify({'error': 'Hash must be 64 characters long'}), 400
+            
+            filtered_emails = []
+            for email_item in emails:
+                extracted_email = extract_email_from_to_field(email_item['to'])
+                if extracted_email and extracted_email.lower() == f'{hash_param}@ghostinbox.it'.lower():
+                    filtered_emails.append(email_item)
+            emails = filtered_emails
+        
+        # Limit results
+        emails = emails[:limit]
+        
+        # Remove body from list endpoint for performance
+        email_list = []
+        for email_item in emails:
+            email_list.append({
+                'id': email_item['id'],
+                'from': email_item['from'],
+                'to': email_item['to'],
+                'subject': email_item['subject'],
+                'date': email_item['date']
+            })
+        
+        return jsonify({
+            'success': True,
+            'count': len(email_list),
+            'emails': email_list
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/emails/<email_id>')
+def api_get_email(email_id):
+    """
+    API endpoint to get a single email by ID.
+    Query parameters:
+    - hash: required hash to verify email ownership (64 characters)
+    """
+    hash_param = request.args.get('hash', '').strip()
+    
+    if not hash_param:
+        return jsonify({
+            'success': False,
+            'error': 'Hash parameter is required'
+        }), 400
+    
+    if len(hash_param) != 64:
+        return jsonify({
+            'success': False,
+            'error': 'Hash must be 64 characters long'
+        }), 400
+    
+    try:
+        email_data = get_email_by_id(email_id)
+        
+        if not email_data:
+            return jsonify({
+                'success': False,
+                'error': 'Email not found'
+            }), 404
+        
+        # Extract the actual email address from the 'to' field
+        extracted_email = extract_email_from_to_field(email_data['to'])
+        
+        # Check if the extracted email matches the hash
+        if not extracted_email or extracted_email.lower() != f'{hash_param}@ghostinbox.it'.lower():
+            return jsonify({
+                'success': False,
+                'error': 'Email not found or hash mismatch'
+            }), 403
+        
+        return jsonify({
+            'success': True,
+            'email': email_data
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
