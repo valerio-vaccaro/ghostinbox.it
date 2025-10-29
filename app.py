@@ -53,7 +53,7 @@ def extract_email_from_to_field(to_field):
 
     return None
 
-def get_emails():
+def get_emails(limit=0):
     try:
         # Connect to Libero.it IMAP server
         mail = imaplib.IMAP4_SSL(IMAP_SERVER, 993)
@@ -62,7 +62,10 @@ def get_emails():
 
         # Search for all emails in the inbox
         status, data = mail.search(None, 'ALL')
-        email_ids = data[0].split()[-10:]  # Get the latest 10 emails
+        if limit > 0:
+            email_ids = data[0].split()[-limit:]
+        else:
+            email_ids = data[0].split()
 
         emails = []
         for email_id in email_ids:
@@ -206,7 +209,7 @@ def search_alias():
         return redirect(url_for('index'))
     
     try:
-        emails = get_emails()
+        emails = get_emails(limit=0)
         # Filter emails where the extracted email matches the hash
         filtered_emails = []
         for email in emails:
@@ -258,7 +261,7 @@ def api_list_emails():
         }), 400
     
     try:
-        emails = get_emails()
+        emails = get_emails(limit=0)
         
         # Filter emails by hash
         filtered_emails = []
@@ -266,10 +269,9 @@ def api_list_emails():
             extracted_email = extract_email_from_to_field(email_item['to'])
             if extracted_email and extracted_email.lower() == f'{hash_param}@ghostinbox.it'.lower():
                 filtered_emails.append(email_item)
-        emails = filtered_emails
-        
+
         # Limit results
-        emails = emails[:limit]
+        emails = filtered_emails[:limit]
         
         # Remove body from list endpoint for performance
         email_list = []
