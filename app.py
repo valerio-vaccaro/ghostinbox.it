@@ -238,26 +238,35 @@ def api_list_emails():
     """
     API endpoint to get list of emails.
     Query parameters:
-    - hash: optional hash to filter emails by alias (64 characters)
+    - hash: required hash to filter emails by alias (64 characters)
     - limit: optional limit of emails to return (default: 10)
     """
     hash_param = request.args.get('hash', '').strip()
     limit = int(request.args.get('limit', 10))
     
+    # Hash is required
+    if not hash_param:
+        return jsonify({
+            'success': False,
+            'error': 'Hash parameter is required'
+        }), 400
+    
+    if len(hash_param) != 64:
+        return jsonify({
+            'success': False,
+            'error': 'Hash must be 64 characters long'
+        }), 400
+    
     try:
         emails = get_emails()
         
-        # If hash is provided, filter emails by that hash
-        if hash_param:
-            if len(hash_param) != 64:
-                return jsonify({'error': 'Hash must be 64 characters long'}), 400
-            
-            filtered_emails = []
-            for email_item in emails:
-                extracted_email = extract_email_from_to_field(email_item['to'])
-                if extracted_email and extracted_email.lower() == f'{hash_param}@ghostinbox.it'.lower():
-                    filtered_emails.append(email_item)
-            emails = filtered_emails
+        # Filter emails by hash
+        filtered_emails = []
+        for email_item in emails:
+            extracted_email = extract_email_from_to_field(email_item['to'])
+            if extracted_email and extracted_email.lower() == f'{hash_param}@ghostinbox.it'.lower():
+                filtered_emails.append(email_item)
+        emails = filtered_emails
         
         # Limit results
         emails = emails[:limit]

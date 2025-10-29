@@ -87,24 +87,21 @@ All API endpoints use hash-based authentication. The hash parameter must match t
 ### Endpoints
 
 #### 1. List Emails
-Get a list of emails, optionally filtered by alias hash.
+Get a list of emails filtered by alias hash.
 
 **Endpoint:** `GET /api/emails`
 
 **Query Parameters:**
-- `hash` (optional): Filter emails by alias hash (64 characters)
+- `hash` (required): Filter emails by alias hash (64 characters)
 - `limit` (optional): Maximum number of emails to return (default: 10)
 
 **Examples:**
 ```bash
-# Get all emails (limited to 10)
-curl "http://localhost:5000/api/emails"
-
 # Get emails for a specific alias
 curl "http://localhost:5000/api/emails?hash=abc123...xyz789"
 
-# Get up to 20 emails
-curl "http://localhost:5000/api/emails?limit=20"
+# Get up to 20 emails for a specific alias
+curl "http://localhost:5000/api/emails?hash=abc123...xyz789&limit=20"
 ```
 
 **Response:**
@@ -125,7 +122,7 @@ curl "http://localhost:5000/api/emails?limit=20"
 ```
 
 **Error Responses:**
-- `400 Bad Request`: Invalid hash format
+- `400 Bad Request`: Missing or invalid hash parameter
 - `500 Internal Server Error`: Server error
 
 #### 2. Get Email Details
