@@ -82,26 +82,26 @@ GhostInbox.it provides a REST API to programmatically access emails.
 All API endpoints are available at: `http://your-domain/api/`
 
 ### Authentication
-All API endpoints use hash-based authentication. The hash parameter must match the SHA256 hash used to generate your email alias (64 characters).
+All API endpoints use alias-based authentication.
 
 ### Endpoints
 
 #### 1. List Emails
-Get a list of emails filtered by alias hash.
+Get a list of emails filtered by alias.
 
-**Endpoint:** `GET /api/emails`
+**Endpoint:** `GET /api/search`
 
 **Query Parameters:**
-- `hash` (required): Filter emails by alias hash (64 characters)
+- `alias` (required): Alias address (e.g., `myalias@`)
 - `limit` (optional): Maximum number of emails to return (default: 10)
 
 **Examples:**
 ```bash
 # Get emails for a specific alias
-curl "http://localhost:5000/api/emails?hash=abc123...xyz789"
+curl "http://localhost:5000/api/emails?alias=myalias"
 
 # Get up to 20 emails for a specific alias
-curl "http://localhost:5000/api/emails?hash=abc123...xyz789&limit=20"
+curl "http://localhost:5000/api/emails?alias=myalias&limit=20"
 ```
 
 **Response:**
@@ -122,7 +122,7 @@ curl "http://localhost:5000/api/emails?hash=abc123...xyz789&limit=20"
 ```
 
 **Error Responses:**
-- `400 Bad Request`: Missing or invalid hash parameter
+- `400 Bad Request`: Missing or invalid alias parameter
 - `500 Internal Server Error`: Server error
 
 #### 2. Get Email Details
@@ -131,11 +131,11 @@ Get the full details of a specific email, including body content.
 **Endpoint:** `GET /api/emails/<email_id>`
 
 **Query Parameters:**
-- `hash` (required): Alias hash to verify email ownership (64 characters)
+- `alias` (required): Alias to verify email ownership
 
 **Example:**
 ```bash
-curl "http://localhost:5000/api/emails/123?hash=abc123...xyz789"
+curl "http://localhost:5000/api/emails/123?alias=myalias"
 ```
 
 **Response:**
@@ -155,18 +155,19 @@ curl "http://localhost:5000/api/emails/123?hash=abc123...xyz789"
 ```
 
 **Error Responses:**
-- `400 Bad Request`: Missing or invalid hash parameter
-- `403 Forbidden`: Hash mismatch - email doesn't belong to this alias
+- `400 Bad Request`: Missing or invalid alias parameter
+- `403 Forbidden`: Alias mismatch - email doesn't belong to this alias
 - `404 Not Found`: Email not found
 - `500 Internal Server Error`: Server error
 
 ### API Usage Tips
 
 - 🔒 Always use HTTPS in production
-- 🔑 Keep your hash secret - it's your authentication token
+- 🔑 Keep your alias secret - it's your authentication token
 - 📝 The email list endpoint doesn't include body content for performance
 - ⚡ Use the `limit` parameter to paginate results
-- 🛡️ The hash verification ensures only the alias owner can view their emails
+- 🛡️ The alias verification ensures only the alias owner can view their emails
+- 🔐 The hash is calculated server-side as `sha256(alias)` to generate the email address
 
 ## 🤝 Contributing
 
