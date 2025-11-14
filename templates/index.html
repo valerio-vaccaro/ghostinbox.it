@@ -59,7 +59,7 @@
             <form id="searchForm" action="{{ url_for('search_alias') }}" method="GET" class="d-flex">
                 <input type="text" 
                        id="aliasInput"
-                       name="hash" 
+                       name="alias" 
                        class="form-control me-2" 
                        placeholder="Enter your alias with 8 or more characters!"
                        minlength="8"
@@ -151,7 +151,7 @@
         if (alias) {
             const hash = await sha256(alias);
             // Update the input value with the hash
-            aliasInput.value = hash;
+            aliasInput.value = alias; //hash;
             this.submit();
         }
     });

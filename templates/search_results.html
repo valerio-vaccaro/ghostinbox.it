@@ -8,7 +8,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="h4 mb-0">Search Results for email:
-                    <span id="email-address">{{ alias }}</span>
+                    <span id="email-address">{{ email }}</span>
                     <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyEmailAddress()" title="Copy email address">
                         <i class="fas fa-copy"></i> Copy
                     </button>
@@ -38,7 +38,7 @@
                                     <td>{{ email.subject }}</td>
                                     <td>{{ email.date }}</td>
                                     <td>
-                                        <a href="{{ url_for('view_email', email_id=email.id, hash=hash) }}" 
+                                        <a href="{{ url_for('view_email', email_id=email.id, alias=alias) }}" 
                                            class="btn btn-sm btn-primary">
                                             <i class="bi bi-eye"></i> View
                                         </a>

@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session, jsonify
 import imaplib
+import hashlib
 import email
 from email.header import decode_header
 import os
@@ -178,10 +179,13 @@ def index():
 
 @app.route('/email/<email_id>')
 def view_email(email_id):
-    hash = request.args.get('hash', '')
-    if not hash:
-        flash('Alias is required to view emails', 'error')
+    alias = request.args.get('alias', '').strip()
+
+    if not alias or len(alias) < 8:
+        flash('Alias is required to search emails', 'error')
         return redirect(url_for('index'))
+    
+    hash = hashlib.sha256(alias.encode()).hexdigest()
         
     email_data = get_email_by_id(email_id)
     if not email_data:
@@ -203,23 +207,21 @@ def view_email(email_id):
 
 @app.route('/search')
 def search_alias():
-    hash = request.args.get('hash', '').strip()
+    alias = request.args.get('alias', '').strip()
 
-    if not hash or len(hash) != 64:
+    if not alias or len(alias) < 8:
+        flash('Alias is required to search emails', 'error')
         return redirect(url_for('index'))
     
+    hash = hashlib.sha256(alias.encode()).hexdigest()
+
     try:
         emails = get_emails(limit=0, hash=hash)
-        # Filter emails where the extracted email matches the hash
-        filtered_emails = []
-        for email in emails:
-            extracted_email = extract_email_from_to_field(email['to'])
-            if extracted_email.lower() == f'{hash}@ghostinbox.it'.lower():
-                filtered_emails.append(email)
 
         return render_template('search_results.html', 
-                             emails=filtered_emails, 
-                             alias=f'{hash}@ghostinbox.it',
+                             emails=emails, 
+                             alias=alias,
+                             email=f'{hash}@ghostinbox.it',
                              hash=hash,
                              domain=DOMAIN,
                              onion_domain=ONION_DOMAIN)
@@ -236,43 +238,26 @@ def about():
     return render_template('about.html', domain=DOMAIN, onion_domain=ONION_DOMAIN)
 
 # API Routes
-@app.route('/api/emails')
+@app.route('/api/search')
 def api_list_emails():
     """
     API endpoint to get list of emails.
     Query parameters:
-    - hash: required hash to filter emails by alias (64 characters)
+    - alias: required alias to filter emails by alias
     - limit: optional limit of emails to return (default: 10)
     """
-    hash_param = request.args.get('hash', '').strip()
+    alias = request.args.get('alias', '').strip()
+
+    if not alias or len(alias) < 8:
+        flash('Alias is required to search emails', 'error')
+        return redirect(url_for('index'))
+    
+    hash = hashlib.sha256(alias.encode()).hexdigest()
     limit = int(request.args.get('limit', 10))
     
-    # Hash is required
-    if not hash_param:
-        return jsonify({
-            'success': False,
-            'error': 'Hash parameter is required'
-        }), 400
-    
-    if len(hash_param) != 64:
-        return jsonify({
-            'success': False,
-            'error': 'Hash must be 64 characters long'
-        }), 400
-    
     try:
-        emails = get_emails(limit=0, hash=hash_param)
-        
-        # Filter emails by hash
-        filtered_emails = []
-        for email_item in emails:
-            extracted_email = extract_email_from_to_field(email_item['to'])
-            if extracted_email and extracted_email.lower() == f'{hash_param}@ghostinbox.it'.lower():
-                filtered_emails.append(email_item)
+        emails = get_emails(limit=0, hash=hash)[:limit]
 
-        # Limit results
-        emails = filtered_emails[:limit]
-        
         # Remove body from list endpoint for performance
         email_list = []
         for email_item in emails:
@@ -301,21 +286,15 @@ def api_get_email(email_id):
     """
     API endpoint to get a single email by ID.
     Query parameters:
-    - hash: required hash to verify email ownership (64 characters)
+    - alias: required alias to verify email ownership
     """
-    hash_param = request.args.get('hash', '').strip()
+    alias = request.args.get('alias', '').strip()
+
+    if not alias or len(alias) < 8:
+        flash('Alias is required to search emails', 'error')
+        return redirect(url_for('index'))
     
-    if not hash_param:
-        return jsonify({
-            'success': False,
-            'error': 'Hash parameter is required'
-        }), 400
-    
-    if len(hash_param) != 64:
-        return jsonify({
-            'success': False,
-            'error': 'Hash must be 64 characters long'
-        }), 400
+    hash = hashlib.sha256(alias.encode()).hexdigest()
     
     try:
         email_data = get_email_by_id(email_id)
@@ -330,7 +309,7 @@ def api_get_email(email_id):
         extracted_email = extract_email_from_to_field(email_data['to'])
         
         # Check if the extracted email matches the hash
-        if not extracted_email or extracted_email.lower() != f'{hash_param}@ghostinbox.it'.lower():
+        if not extracted_email or extracted_email.lower() != f'{hash}@ghostinbox.it'.lower():
             return jsonify({
                 'success': False,
                 'error': 'Email not found or hash mismatch'
