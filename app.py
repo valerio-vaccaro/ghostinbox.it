@@ -394,4 +394,6 @@ def api_get_email(email_id):
         }), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Enable debug mode only when explicitly requested via environment variable
+    debug_mode = os.environ.get('FLASK_DEBUG', '').lower() in ('1', 'true', 'yes')
+    app.run(debug=debug_mode)
