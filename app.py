@@ -24,7 +24,7 @@ ONION_DOMAIN = os.getenv('ONION_DOMAIN')
 # Example usage (e.g., connecting to an IMAP server)
 # Replace this with your actual code
 print(f"Email: {EMAIL_ADDRESS}")
-print(f"Password: {PASSWORD}")
+print("Password configured: " + ("YES" if PASSWORD else "NO"))
 
 # Libero.it IMAP settings
 IMAP_SERVER = 'imapmail.libero.it'
