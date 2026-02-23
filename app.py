@@ -9,6 +9,7 @@ import base64
 from dotenv import load_dotenv
 import logging
 import bleach
+from bleach.css_sanitizer import CSSSanitizer, ALLOWED_CSS_PROPERTIES, ALLOWED_SVG_PROPERTIES
 
 # Load environment variables from .env file
 load_dotenv()
@@ -270,6 +271,19 @@ def email_html_body(email_id):
     extracted_email = extract_email_from_to_field(email_data['to'])
     if extracted_email != f'{hash_val}@ghostinbox.it':
         return '', 403
+    # Extended CSS properties for email styling (beyond bleach defaults)
+    allowed_css = ALLOWED_CSS_PROPERTIES | frozenset(
+        ('margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+         'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+         'border', 'border-width', 'border-style', 'border-color',
+         'border-top', 'border-right', 'border-bottom', 'border-left',
+         'background', 'background-color', 'background-image', 'background-repeat',
+         'background-position', 'background-size', 'list-style', 'list-style-type')
+    )
+    css_sanitizer = CSSSanitizer(
+        allowed_css_properties=allowed_css,
+        allowed_svg_properties=ALLOWED_SVG_PROPERTIES,
+    )
     # Sanitize HTML body to prevent XSS while allowing common email formatting.
     sanitized_body = bleach.clean(
         email_data['body'],
@@ -277,15 +291,17 @@ def email_html_body(email_id):
             'a', 'abbr', 'acronym', 'b', 'blockquote', 'br', 'code', 'em',
             'i', 'li', 'ol', 'strong', 'ul', 'p', 'span', 'div', 'img',
             'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3',
-            'h4', 'h5', 'h6', 'pre', 'hr'
+            'h4', 'h5', 'h6', 'pre', 'hr', 'style', 'link'
         ],
         attributes={
-            '*': ['style'],
+            '*': ['style', 'align', 'id', 'name', 'class'],
             'a': ['href', 'title', 'name', 'target', 'rel'],
-            'img': ['src', 'alt', 'title', 'width', 'height']
+            'img': ['src', 'alt', 'title', 'width', 'height'],
+            'link': ['href', 'rel', 'type']
         },
         protocols=['http', 'https', 'mailto', 'data'],
-        strip=True
+        strip=True,
+        css_sanitizer=css_sanitizer
     )
     # Wrap in minimal document so email styles apply; background for emails without one
     html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
