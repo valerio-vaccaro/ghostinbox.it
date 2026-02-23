@@ -8,6 +8,7 @@ import re
 import base64
 from dotenv import load_dotenv
 import logging
+import bleach
 
 # Load environment variables from .env file
 load_dotenv()
@@ -269,10 +270,27 @@ def email_html_body(email_id):
     extracted_email = extract_email_from_to_field(email_data['to'])
     if extracted_email != f'{hash_val}@ghostinbox.it':
         return '', 403
+    # Sanitize HTML body to prevent XSS while allowing common email formatting.
+    sanitized_body = bleach.clean(
+        email_data['body'],
+        tags=[
+            'a', 'abbr', 'acronym', 'b', 'blockquote', 'br', 'code', 'em',
+            'i', 'li', 'ol', 'strong', 'ul', 'p', 'span', 'div', 'img',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'h1', 'h2', 'h3',
+            'h4', 'h5', 'h6', 'pre', 'hr'
+        ],
+        attributes={
+            '*': ['style'],
+            'a': ['href', 'title', 'name', 'target', 'rel'],
+            'img': ['src', 'alt', 'title', 'width', 'height']
+        },
+        protocols=['http', 'https', 'mailto', 'data'],
+        strip=True
+    )
     # Wrap in minimal document so email styles apply; background for emails without one
     html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <style>body{{margin:0;padding:1rem;background:#fff;color:#333;font-family:sans-serif;}}</style></head>
-<body>{email_data['body']}</body></html>'''
+<body>{sanitized_body}</body></html>'''
     return Response(html, mimetype='text/html; charset=utf-8')
 
 
