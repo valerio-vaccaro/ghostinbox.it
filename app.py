@@ -7,12 +7,16 @@ import os
 import re
 import base64
 from dotenv import load_dotenv
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'fallback-secret-key-for-development')
+
+# Basic logging configuration; adjust level/handlers as needed.
+logging.basicConfig(level=logging.INFO)
 
 # Retrieve email and password from environment variables
 EMAIL_ADDRESS = os.getenv('BASE_EMAIL')
@@ -343,9 +347,11 @@ def api_list_emails():
         })
     
     except Exception as e:
+        # Log the full exception details on the server, but do not expose them to the client.
+        logging.exception("Error while listing emails")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'An internal error has occurred while listing emails.'
         }), 500
 
 @app.route('/api/emails/<email_id>')
@@ -386,11 +392,13 @@ def api_get_email(email_id):
             'success': True,
             'email': email_data
         })
+        # Log the full exception details on the server, but return a generic message to the client.
+        logging.exception("Error while retrieving email")
     
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'An internal error has occurred while retrieving the email.'
         }), 500
 
 if __name__ == '__main__':
