@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, session, jsonify, Response
 import imaplib
 import hashlib
 import email
 from email.header import decode_header
 import os
 import re
+import base64
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -27,6 +28,27 @@ print(f"Password: {PASSWORD}")
 
 # Libero.it IMAP settings
 IMAP_SERVER = 'imapmail.libero.it'
+
+def replace_cid_with_data_uris(html_body, cid_map):
+    """
+    Replace cid: references in HTML with inline data URIs.
+    cid_map: dict of content_id -> (mime_type, payload_bytes)
+    """
+    if not html_body or not cid_map:
+        return html_body
+
+    def replace_cid(match):
+        cid = match.group(1).strip()
+        # Content-ID in email may be <id> or id; normalize
+        cid_clean = cid.strip('<>')
+        if cid_clean in cid_map:
+            mime_type, payload = cid_map[cid_clean]
+            b64 = base64.b64encode(payload).decode('ascii')
+            return f'data:{mime_type};base64,{b64}'
+        return match.group(0)
+
+    return re.sub(r'cid:([^\s"\'<>]+)', replace_cid, html_body, flags=re.IGNORECASE)
+
 
 def extract_email_from_to_field(to_field):
     """
@@ -140,20 +162,41 @@ def get_email_by_id(email_id):
         # Get email date
         date_ = msg.get('date')
 
-        # Get email body (prefer plain text, fall back to HTML)
+        # Get email body (prefer HTML, fall back to plain text)
+        # Also collect inline attachments (Content-ID) for cid: replacement
+        # And image attachments to display (e.g. QR codes)
         body = ''
-        content_type = ''
+        content_type = 'text/plain'
+        plain_body = ''
+        html_body = ''
+        cid_map = {}  # content_id -> (mime_type, payload_bytes)
+        image_attachments = []  # list of (mime_type, base64_data) for images
         if msg.is_multipart():
             for part in msg.walk():
-                content_type = part.get_content_type()
-                if content_type == 'text/plain':
-                    body = part.get_payload(decode=True).decode(errors='ignore')
-                    break
-                elif content_type == 'text/html' and not body:
-                    body = part.get_payload(decode=True).decode(errors='ignore')
+                part_content_type = part.get_content_type()
+                content_id = part.get('Content-ID')
+                payload = part.get_payload(decode=True)
+                if content_id and payload:
+                    cid_clean = content_id.strip('<>')
+                    cid_map[cid_clean] = (part_content_type, payload)
+                # Standalone image attachments (no Content-ID) - inline images shown via cid: replacement
+                if (part_content_type and part_content_type.startswith('image/') and payload
+                        and not content_id):
+                    b64 = base64.b64encode(payload).decode('ascii')
+                    image_attachments.append((part_content_type, b64))
+                if part_content_type == 'text/plain':
+                    plain_body = payload.decode(errors='ignore') if payload else plain_body
+                elif part_content_type == 'text/html':
+                    html_body = payload.decode(errors='ignore') if payload else html_body
+            if html_body:
+                body = replace_cid_with_data_uris(html_body, cid_map)
+                content_type = 'text/html'
+            else:
+                body = plain_body
+                content_type = 'text/plain'
         else:
             body = msg.get_payload(decode=True).decode(errors='ignore')
-            content_type = msg.get_content_type()
+            content_type = msg.get_content_type() or 'text/plain'
 
         # Get receiver
         to_ = msg.get('to')
@@ -166,7 +209,8 @@ def get_email_by_id(email_id):
             'subject': subject,
             'date': date_,
             'body': body,
-            'content_type': content_type
+            'content_type': content_type,
+            'image_attachments': image_attachments
         }
 
     except Exception as e:
@@ -203,7 +247,30 @@ def view_email(email_id):
     # Store the hash in session for subsequent requests
     session['hash'] = hash
 
-    return render_template('email_view.html', email=email_data, hash=hash, domain=DOMAIN, onion_domain=ONION_DOMAIN)
+    alias_param = request.args.get('alias', '')
+    return render_template('email_view.html', email=email_data, hash=hash, alias=alias_param,
+                          domain=DOMAIN, onion_domain=ONION_DOMAIN)
+
+
+@app.route('/email/<email_id>/html')
+def email_html_body(email_id):
+    """Serve email HTML body for iframe - isolated from app theme for correct email styling."""
+    alias = request.args.get('alias', '').strip()
+    if not alias or len(alias) < 8:
+        return '', 403
+    hash_val = hashlib.sha256(alias.encode()).hexdigest()
+    email_data = get_email_by_id(email_id)
+    if not email_data or email_data.get('content_type') != 'text/html':
+        return '', 404
+    extracted_email = extract_email_from_to_field(email_data['to'])
+    if extracted_email != f'{hash_val}@ghostinbox.it':
+        return '', 403
+    # Wrap in minimal document so email styles apply; background for emails without one
+    html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<style>body{{margin:0;padding:1rem;background:#fff;color:#333;font-family:sans-serif;}}</style></head>
+<body>{email_data['body']}</body></html>'''
+    return Response(html, mimetype='text/html; charset=utf-8')
+
 
 @app.route('/search')
 def search_alias():

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Search Results - {{ config.DOMAIN }}{% endblock %}
+{% block title %}Risultati - {{ domain }}{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -9,25 +9,25 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="h4 mb-0">Search Results for email:
                     <span id="email-address">{{ email }}</span>
-                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyEmailAddress()" title="Copy email address">
-                        <i class="fas fa-copy"></i> Copy
+                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyEmailAddress()" title="Copia indirizzo email">
+                        <i class="bi bi-clipboard"></i> Copia
                     </button>
                 </h2>
-                <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-arrow-left"></i> Back to Home
+                <a href="{{ url_for('index') }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left"></i> Home
                 </a>
             </div>
             <div class="card-body">
                 {% if emails %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
-                                    <th>From</th>
-                                    <th>To</th>
-                                    <th>Subject</th>
-                                    <th>Date</th>
-                                    <th>Action</th>
+                                    <th><i class="bi bi-person me-1"></i>Da</th>
+                                    <th><i class="bi bi-envelope me-1"></i>A</th>
+                                    <th><i class="bi bi-chat-text me-1"></i>Oggetto</th>
+                                    <th><i class="bi bi-calendar3 me-1"></i>Data</th>
+                                    <th class="text-end">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -37,10 +37,10 @@
                                     <td>{{ email.to }}</td>
                                     <td>{{ email.subject }}</td>
                                     <td>{{ email.date }}</td>
-                                    <td>
+                                    <td class="text-end">
                                         <a href="{{ url_for('view_email', email_id=email.id, alias=alias) }}" 
                                            class="btn btn-sm btn-primary">
-                                            <i class="bi bi-eye"></i> View
+                                            <i class="bi bi-eye"></i> Apri
                                         </a>
                                     </td>
                                 </tr>
@@ -49,8 +49,9 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> No emails found for this email.
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="bi bi-inbox fs-4 me-3"></i>
+                        <div>Nessuna email trovata per questo indirizzo.</div>
                     </div>
                 {% endif %}
             </div>
@@ -108,7 +109,7 @@ function showCopySuccess() {
     const button = document.querySelector('button[onclick="copyEmailAddress()"]');
     const originalText = button.innerHTML;
 
-    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    button.innerHTML = '<i class="bi bi-check-lg"></i> Copiato!';
     button.classList.remove('btn-outline-secondary');
     button.classList.add('btn-success');
 
@@ -123,7 +124,7 @@ function showCopyError() {
     const button = document.querySelector('button[onclick="copyEmailAddress()"]');
     const originalText = button.innerHTML;
 
-    button.innerHTML = '<i class="fas fa-times"></i> Failed';
+    button.innerHTML = '<i class="bi bi-x-lg"></i> Errore';
     button.classList.remove('btn-outline-secondary');
     button.classList.add('btn-danger');
 

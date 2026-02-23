@@ -1,29 +1,78 @@
 {% extends "base.html" %}
 
-{% block title %}Email Details - {{ config.DOMAIN }}{% endblock %}
+{% block title %}Email - {{ email.subject }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h4 mb-0">Email Details</h2>
+                <h2 class="h5 mb-0"><i class="bi bi-envelope-open me-2"></i>{{ email.subject }}</h2>
+                <a href="{{ url_for('search_alias') }}?alias={{ alias | urlencode }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left"></i> Indietro
+                </a>
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <p><strong>From:</strong> {{ email.from }}</p>
-                    <p><strong>To:</strong> {{ email.to }}</p>
-                    <p><strong>Subject:</strong> {{ email.subject }}</p>
-                    <p><strong>Date:</strong> {{ email.date }}</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-person-fill me-2 text-primary mt-1"></i>
+                            <div>
+                                <small class="text-muted d-block">Da</small>
+                                <span class="text-break">{{ email.from }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-envelope-fill me-2 text-primary mt-1"></i>
+                            <div>
+                                <small class="text-muted d-block">A</small>
+                                <span class="text-break">{{ email.to }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-calendar3 me-2 text-primary mt-1"></i>
+                            <div>
+                                <small class="text-muted d-block">Data</small>
+                                <span>{{ email.date }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-filetype-html me-2 text-primary mt-1"></i>
+                            <div>
+                                <small class="text-muted d-block">Tipo</small>
+                                <span class="badge bg-secondary">{{ email.content_type }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <hr>
                 <div class="email-body">
                     {% if email.content_type == 'text/html' %}
-                        {{ email.body | safe }}
+                        <iframe src="{{ url_for('email_html_body', email_id=email.id) }}?alias={{ alias | urlencode }}"
+                                class="email-html-iframe" title="Contenuto email" sandbox="allow-same-origin"></iframe>
                     {% else %}
-                        {{ email.body }}
+                        <div class="email-body-plain" style="white-space: pre-wrap;">{{ email.body }}</div>
                     {% endif %}
                 </div>
+                {% if email.image_attachments | default([]) %}
+                <hr>
+                <div class="mt-4">
+                    <h6 class="text-muted mb-3"><i class="bi bi-images me-1"></i> Allegati immagine</h6>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for mime_type, b64_data in email.image_attachments %}
+                        <div class="border rounded p-2" style="background: var(--bs-body-bg);">
+                            <img src="data:{{ mime_type }};base64,{{ b64_data }}" alt="Allegato" class="img-fluid rounded" style="max-height: 220px; display: block;">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
