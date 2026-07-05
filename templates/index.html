@@ -13,7 +13,7 @@
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     .welcome-logo {
-        max-width: 560px;
+        width: min(100%, 560px);
         height: auto;
         margin-bottom: 1.5rem;
         filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
@@ -44,6 +44,15 @@
         padding: 0.5rem;
         background: var(--bs-body-bg);
         border-radius: 6px;
+    }
+    @media (max-width: 576px) {
+        .welcome-section {
+            padding: 2.5rem 1rem;
+        }
+        .welcome-logo {
+            width: min(82vw, 360px);
+            margin-bottom: 1rem;
+        }
     }
 </style>
 {% endblock %}
