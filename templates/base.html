@@ -74,6 +74,12 @@
         .form-control, .form-select {
             border-radius: 8px;
         }
+        .site-footer-note {
+            line-height: 1.6;
+        }
+        .version-badge {
+            vertical-align: middle;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -122,8 +128,10 @@
     </div>
 
     <footer class="mt-auto py-3 bg-body-tertiary border-top">
-        <div class="container text-center text-muted small">
+        <div class="container text-center text-muted small site-footer-note">
             <i class="bi bi-shield-lock"></i> GhostInbox — Privacy-first temporary email
+            <span class="badge text-bg-secondary version-badge">v{{ app_version }}</span>
+            <span class="d-inline-block">Licensed under the MIT License.</span>
         </div>
     </footer>
 

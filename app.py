@@ -6,6 +6,7 @@ from email.header import decode_header
 import os
 import re
 import base64
+import subprocess
 from dotenv import load_dotenv
 import logging
 import bleach
@@ -27,6 +28,24 @@ IMAP_SERVER = os.getenv('IMAP_SERVER')
 DOMAIN = os.getenv('DOMAIN')
 ONION_DOMAIN = os.getenv('ONION_DOMAIN')
 
+
+def get_app_version():
+    try:
+        result = subprocess.run(
+            ['git', 'describe', '--tags', '--abbrev=0'],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+        version = result.stdout.strip()
+        return version or 'dev'
+    except Exception:
+        return 'dev'
+
+
+APP_VERSION = get_app_version()
+
 # Example usage (e.g., connecting to an IMAP server)
 # Replace this with your actual code
 print(f"Email: {EMAIL_ADDRESS}")
@@ -34,6 +53,11 @@ print("Password configured: " + ("YES" if PASSWORD else "NO"))
 
 # Libero.it IMAP settings
 IMAP_SERVER = 'imapmail.libero.it'
+
+
+@app.context_processor
+def inject_app_metadata():
+    return {'app_version': APP_VERSION}
 
 def replace_cid_with_data_uris(html_body, cid_map):
     """
